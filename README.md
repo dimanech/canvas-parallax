@@ -14,6 +14,6 @@ Just import this module and add this structure with `data`-attributes.
 </canvas>
 ```
 
-Supports: IE9+, Modern browsers.
+Supports: IE9+, Evergreen browsers.
 
 Copyright © 2017, Dima Nechepurenko. Published under MIT license.
