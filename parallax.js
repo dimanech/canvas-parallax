@@ -10,7 +10,7 @@
  * @param {string} data-start - from where start to render motion. Values: [document|top|bottom]. Default: bottom
  * @param {int} data-offset - max offset that picture has. Default: 40
  * @example
- * <canvas data-parallax data-start="top" data-offset="20">
+ * <canvas data-parallax data-start="bottom" data-offset="40">
  *    <picture>
  *       <source media="(max-width: 768px)" srcset="images/slide-1-sm.jpg">
  *       <source media="(max-width: 1024px)" srcset="images/slide-1-md.jpg">
@@ -243,6 +243,6 @@ $.fn.canvasParallax = function () {
 
 module.exports = {
     init: function () {
-        $('canvas[data-parallax]').canvas.canvasParallax();
+        $('canvas[data-parallax]').canvasParallax();
     }
 };
