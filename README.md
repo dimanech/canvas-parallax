@@ -2,7 +2,7 @@
 
 Simple plugin with declarative interface that render image in parallax mainer. Support responsive images and gracefully fall to default images if JS is disabled.
 
-Just import this module and add this structure with `data`-attributes.
+Just import this module and add this structure with `data`-attributes and alternative image sources.
 
 ```html
 <canvas data-parallax data-start="top" data-offset="20">
@@ -13,6 +13,8 @@ Just import this module and add this structure with `data`-attributes.
     </picture>
 </canvas>
 ```
+
+This plugin use gyroscope to render image depending of device angle that add additional effect of perspective. 
 
 Supports: IE9+, Evergreen browsers.
 
