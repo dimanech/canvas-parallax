@@ -7,7 +7,7 @@
  */
 
 /**
- * Parallax
+ * Canvas Paralax
  *
  * @type {jQuery}
  * @param {int} data-speed - aspect of the motion. Valid only for start: top
@@ -16,8 +16,9 @@
  * @example
  * <canvas data-parallax data-start="top" data-offset="20">
  *    <picture>
- *       <source media="(max-width: 768px)" srcset="images/homepage/hp-carousel-slide-1-sm.jpg">
- *       <img src="images/homepage/hp-carousel-slide-1-lg.jpg" />
+ *       <source media="(max-width: 768px)" srcset="images/slide-1-sm.jpg">
+ *       <source media="(max-width: 1024px)" srcset="images/slide-1-md.jpg">
+ *       <img src="images/slide-1-lg.jpg" />
  *    </picture>
  * </canvas>
  */
@@ -192,7 +193,7 @@ Parallax.prototype.attachEventHandlers = function () {
     });
 };
 
-$.fn.parallax = function () {
+$.fn.canvasParallax = function () {
     var windowHeight = window.innerHeight;
 
     // Prepare each instance configuration
@@ -244,15 +245,8 @@ $.fn.parallax = function () {
     return this;
 };
 
-/*
- * Initialize DOM
- */
-function initializeDOM() {
-    $('canvas[data-parallax]').canvas.parallax();
-}
-
 module.exports = {
     init: function () {
-        initializeDOM();
+        $('canvas[data-parallax]').canvas.canvasParallax();
     }
 };
