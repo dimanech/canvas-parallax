@@ -4,10 +4,6 @@
  * jQuery Canvas Paralax v0.1 (alfa)
  * Copyright © 2017, Dima Nechepurenko <dimanechepurenko@gmail.com>
  * Published under MIT license.
- */
-
-/**
- * Canvas Paralax
  *
  * @type {jQuery}
  * @param {int} data-speed - aspect of the motion. Valid only for start: top
