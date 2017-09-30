@@ -1,258 +1,214 @@
 'use strict';
 
 /**
- * jQuery Canvas Paralax v0.1 (alfa)
+ * Canvas Parallax
  * Copyright © 2017, Dima Nechepurenko <dimanechepurenko@gmail.com>
  * Published under MIT license.
- */
-
-/**
- * Parallax
  *
- * @type {jQuery}
  * @param {int} data-speed - aspect of the motion. Valid only for start: top
- * @param {string} data-start - from where start to render motion. Values: [document|top|bottom]. Default: bottom
- * @param {int} data-offset - max offset that picture has. Default: 40
+ * @param {string} data-start - from where start to render motion. Values: [document|passTop|passBottom]. Default: bottom
+ * @param {int} data-offset - max offset that picture has. Default: 60
  * @example
- * <canvas data-parallax data-start="top" data-offset="20">
+ * <canvas data-parallax data-start="passTop" data-offset="60">
  *    <picture>
- *       <source media="(max-width: 768px)" srcset="images/homepage/hp-carousel-slide-1-sm.jpg">
- *       <img src="images/homepage/hp-carousel-slide-1-lg.jpg" />
+ *       <source media="(max-width: 768px)" srcset="images/img-sm.jpg" />
+ *       <img src="images/img-lg.jpg" />
  *    </picture>
  * </canvas>
  */
+class CanvasParallax {
+	/**
+	 * @constructor
+	 *
+	 * @param {object} params - parameters object
+	 * @param {object} params.instance - DOM node. `canvas` is expected
+	 * @param {string} params.src - image src URI string
+	 * @param {int} params.top - position from the top of the instance
+	 * @param {int} params.start - start point depending on options
+	 * @param {function} params.localScroll - scroll logic
+	 * @param {object} options - options object
+	 * @param {string} options.start - start option of the parallax
+	 * @param {int} options.offset - padding of the image on what it would be scrolled
+	 * @param {int} options.speed - delay of scroll. Valid only for start 'document' and 'passTop'
+	 */
+	constructor(params, options) {
+		this.options = options;
+		this.canvas = params.instance;
+		this.src = params.src;
+		this.top = params.top;
+		this.beta = 0;
+		this.gamma = 0;
+		this.start = this.top - window.innerHeight;
+		this.localScroll = params.localScroll;
+		this.latestKnownScroll = 0;
+		this.context = this.canvas.getContext('2d');
+		this.loadImage();
+		this.attachEventHandlers();
+	}
 
-var $ = require('jquery');
+	static getDocumentScroll() {
+		return (document.documentElement && document.documentElement.scrollTop) ||
+			document.body.scrollTop;
+	};
 
-var instances = [];
+	loadImage() {
+		this.image = new Image();
+		const self = this;
+		this.image.addEventListener('load', function () {
+			self.initCanvasSize();
+			self.isImageLoaded = true;
+			self.render(CanvasParallax.getDocumentScroll());
+		});
+		this.image.src = this.src;
+	};
 
-/**
- * Creates new Parallax object
- * @constructor
- *
- * @param {object} params - parameters object
- * @param {object} params.instance - DOM node. `canvas` is expected
- * @param {string} params.src - image src URI string
- * @param {int} params.top - position from the top of the instance
- * @param {int} params.start - start point depending on options
- * @param {function} params.localScroll - scroll logic
- * @param {object} options - options object
- * @param {string} options.start - start option of the parallax
- * @param {int} options.offset - padding of the image on what it would be scrolled
- * @param {int} options.speed - delay of scroll. Valid only for start 'document' and 'top'
- */
-var Parallax = function (params, options) {
-    this.options = options;
-    this.canvas = params.instance[0];
-    this.src = params.src;
-    this.top = params.top;
-    this.beta = 0;
-    this.gamma = 0;
-    this.start = params.start;
-    this.localScroll = params.localScroll;
-    this.latestKnownScroll = 0;
-    this.context = this.canvas.getContext('2d');
-    this.loadImage();
-    this.attachEventHandlers();
+	initCanvasSize() {
+		this.canvas.width = this.image.width - (this.options.offset);
+		this.canvas.height = this.image.height - (this.options.offset);
+	};
 
-    return this;
-};
+	scrollToPosition(scrollTop) {
+		const offset = this.options.offset;
+		const localScroll = scrollTop - this.start;
+		const position = localScroll / (window.innerHeight / offset);
+		return position - offset;
+	}
 
-/**
- * @function
- * @description normalize getting current scroll top coordinates
- */
-Parallax.prototype.getDocumentScroll = function () {
-    return (document.documentElement && document.documentElement.scrollTop) ||
-        document.body.scrollTop;
-};
+	render(scrollTop) {
+		const offset = this.options.offset;
 
-/**
- * @function
- * @description load image from <picture> srcset or src
- */
-Parallax.prototype.loadImage = function () {
-    this.image = new Image();
-    var self = this;
-    this.image.addEventListener('load', function () {
-        self.initCanvasSize();
-        self.isImageLoaded = true;
-        self.render(self.getDocumentScroll());
-    }, false);
-    this.image.src = this.src;
-};
+		const y = Math.round(this.scrollToPosition(scrollTop));
+		const beta = this.beta > offset ? offset : this.beta;
+		const gamma = this.gamma > offset ? offset : this.gamma;
 
-/**
- * @function
- * @description set sizes of loaded image on canvas element
- */
-Parallax.prototype.initCanvasSize = function () {
-    this.canvas.width = this.image.width - this.options.offset;
-    this.canvas.height = this.image.height - this.options.offset;
-};
+		if (y > offset) {
+			return false;
+		}
 
-/**
- * @function
- * @description render image on canvas according to scroll position and config
- * @param {int} scrollTop - scrolled position
- */
-Parallax.prototype.render = function (scrollTop) {
-    var offset = this.options.offset;
+		this.context.drawImage(this.image, beta - offset, y - gamma);
+	};
 
-    var localScroll = this.localScroll(scrollTop);
-    var y = Math.round(localScroll) - offset;
+	onScroll() {
+		const scrollTop = CanvasParallax.getDocumentScroll();
 
-    var beta = this.beta > offset ? offset : this.beta;
-    var gamma = this.gamma > offset ? offset : this.gamma;
+		if (!this.isImageLoaded && scrollTop > this.top + this.image.height) {
+			return false;
+		}
 
-    this.context.clearRect(0, 0, this.image.width, this.image.height);
-    this.context.drawImage(this.image, beta - offset, y - gamma);
-};
+		if (scrollTop >= this.start) {
+			this.render(scrollTop);
+		}
+	};
 
-/**
- * @function
- * @description check if we need to call render() for particular instance onscroll event
- * @param {int} scrollTop - scrolled position
- */
-Parallax.prototype.onScroll = function (scrollTop) {
-    if (!this.isImageLoaded && scrollTop > this.top + this.image.height) {
-        return false;
-    }
+	onDeviceOrientationChange(event) {
+		this.beta = Math.round(event.beta / 6);
+		this.gamma = Math.round(event.gamma / 6);
+		this.render(CanvasParallax.getDocumentScroll());
+	};
 
-    if (scrollTop >= this.start) {
-        this.render(scrollTop);
-    }
-};
+	onScreenChange() {
+		const canvas = this.canvas;
+		const imageSrc = canvas.querySelectorAll('img')[0];
+		const canvasTop = canvas.getBoundingClientRect().top + CanvasParallax.getDocumentScroll();
 
-/**
- * @function
- * @description render image and update props depending on device orientation
- * @param {object} event - device orientation event object
- */
-Parallax.prototype.onDeviceOrientationChange = function (event) {
-    this.beta = Math.round(event.beta / 6);
-    this.gamma = Math.round(event.gamma / 6);
-    this.render(this.getDocumentScroll());
-};
+		this.top = canvasTop;
+		this.start = canvasTop - window.innerHeight;
+		this.src = imageSrc.currentSrc || imageSrc.src;
 
-/**
- * @function
- * @description update instance parameters on screen size changes
- * @param {int} windowHeight - window height
- */
-Parallax.prototype.onScreenChange = function (windowHeight) {
-    var $canvas = $(this.canvas);
-    var imageSrc = $canvas.find('img')[0];
-    var canvasTop = $canvas.offset().top;
+		this.loadImage();
+	};
 
-    this.top = canvasTop;
-    this.start = canvasTop - windowHeight;
-    this.src = imageSrc.currentSrc || imageSrc.src;
+	scrollPositionInfinitePoll() {
+		const scrollTop = CanvasParallax.getDocumentScroll();
 
-    this.loadImage();
-};
+		if (scrollTop !== this.latestKnownScroll) {
+			this.latestKnownScroll = scrollTop;
+			this.onScroll(scrollTop);
+		}
 
-/**
- * @function
- * @description recursive rendering. Used to fix scroll events delay on iOS
- */
-Parallax.prototype.scrollPositionInfinitePoll = function () {
-    var scrollTop = this.getDocumentScroll();
+		window.requestAnimationFrame(this.scrollPositionInfinitePoll.bind(this));
+	};
 
-    if (scrollTop !== this.latestKnownScroll) {
-        this.latestKnownScroll = scrollTop;
-        this.onScroll(scrollTop);
-    }
+	attachEventHandlers() {
+		window.addEventListener('scroll', this.onScroll.bind(this), {passive: true});
+		window.addEventListener('touchstart', this.onScroll.bind(this), {passive: true});
 
-    window.requestAnimationFrame(this.scrollPositionInfinitePoll.bind(this));
-};
+		if (window.DeviceOrientationEvent) {
+			window.addEventListener('deviceorientation', this.onDeviceOrientationChange.bind(this));
+		}
 
-/**
- * @function
- * @description attach event handlers for each instance
- */
-Parallax.prototype.attachEventHandlers = function () {
-    var self = this;
-
-    if (navigator.userAgent.match('iPhone') || navigator.userAgent.match('iPad')) {
-        this.scrollPositionInfinitePoll();
-    } else {
-        window.addEventListener('scroll', this.onScroll.bind(this));
-        window.addEventListener('touchstart', this.onScroll.bind(this));
-    }
-
-    if (window.DeviceOrientationEvent) {
-        window.addEventListener('deviceorientation', this.onDeviceOrientationChange.bind(this), true);
-    }
-
-    window.addEventListener('orientationchange resize', function () {
-        var windowHeight = window.innerHeight;
-
-        self.onScreenChange(windowHeight);
-    });
-};
-
-$.fn.parallax = function () {
-    var windowHeight = window.innerHeight;
-
-    // Prepare each instance configuration
-    $(this).each(function () {
-        var instance = $(this);
-        var options = {
-            speed: instance.attr('data-speed') || 5,
-            offset: instance.attr('data-offset') || 40,
-            start: instance.attr('data-start') || 'bottom'
-        };
-        var top = instance.offset().top;
-        var image = instance.find('img')[0];
-        var start = 0;
-        var localScroll = function (scrollTop) {
-            return ((scrollTop - start) / options.speed);
-        };
-
-        switch (options.start) {
-            case 'document':
-                break;
-            case 'bottom':
-                start = top - windowHeight;
-                localScroll = function (scrollTop) {
-                    return (scrollTop - start) / (windowHeight / options.offset);
-                };
-                break;
-            case 'top':
-                start = top;
-                break;
-        }
-
-        $(image).one('load', function () {
-            var params = {
-                instance: instance,
-                src: image.currentSrc || image.src,
-                top: top,
-                start: start,
-                localScroll: localScroll
-            };
-
-            instances.push(new Parallax(params, options));
-        }).each(function () {
-            if (this.complete) {
-                $(this).load();
-            }
-        });
-    });
-
-    return this;
-};
-
-/*
- * Initialize DOM
- */
-function initializeDOM() {
-    $('canvas[data-parallax]').canvas.parallax();
+		window.addEventListener('orientationchange', this.onScreenChange.bind(this));
+		window.addEventListener('resize', this.onScreenChange.bind(this));
+	};
 }
 
-module.exports = {
-    init: function () {
-        initializeDOM();
-    }
-};
+class CanvasParallaxDocument extends CanvasParallax {
+	scrollToPosition(scrollTop) {
+		return (scrollTop / this.options.speed);
+	}
+}
+
+class CanvasParallaxTop extends CanvasParallax {
+	constructor(params, options) {
+		super(params, options);
+		this.start = this.top;
+	}
+
+	onScreenChange() {
+		const canvas = this.canvas;
+		const imageSrc = canvas.querySelectorAll('img')[0];
+		const canvasTop = canvas.getBoundingClientRect().top + CanvasParallax.getDocumentScroll();
+
+		this.top = canvasTop;
+		this.start = this.top;
+		this.src = imageSrc.currentSrc || imageSrc.src;
+
+		this.loadImage();
+	};
+
+	scrollToPosition(scrollTop) {
+		return ((scrollTop - this.start) / this.options.speed);
+	}
+}
+
+document.querySelectorAll('canvas[data-parallax]').forEach(function (inst) {
+	const instance = inst;
+	const image = instance.querySelectorAll('img')[0];
+
+	function createInstance() {
+		const params = {
+			instance: instance,
+			src: image.currentSrc || image.src,
+			top: instance.getBoundingClientRect().top + CanvasParallax.getDocumentScroll()
+		};
+
+		const options = {
+			speed: instance.getAttribute('data-speed') || 5,
+			offset: instance.getAttribute('data-offset') || 60,
+			start: instance.getAttribute('data-start') || 'passBottom'
+		};
+
+		switch (options.start) {
+			case 'document':
+				new CanvasParallaxDocument(params, options);
+				break;
+			case 'passBottom':
+				new CanvasParallax(params, options);
+				break;
+			case 'passTop':
+				new CanvasParallaxTop(params, options);
+				break;
+		}
+	}
+
+	// We need to wait until image is loaded because we don't have right src-set
+	// in other case.
+	if (image.complete) {
+		// If image returns from cache
+		createInstance(instance);
+	} else {
+		// Remove listener after done
+		image.addEventListener('load', createInstance());
+		image.removeEventListener('load', createInstance());
+	}
+});

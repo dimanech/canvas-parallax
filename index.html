@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<meta http-equiv="X-UA-Compatible" content="ie=edge">
+	<title>Canvas Parallax</title>
+	<style>
+		body {
+			margin: 0;
+			height: 8000px;
+			font-size: 20px;
+		}
+		
+		canvas {
+			width: 100%;
+			height: auto;
+		}
+		
+		@supports (object-fit: cover) {
+			canvas {
+				object-fit: cover;
+			}
+		}
+		
+		figure {
+			position: relative;
+			text-align: center;
+			margin: 0;
+		}
+		
+		figcaption {
+			display: inline-flex;
+			position: absolute;
+			top: 0;
+			bottom: 0;
+			left: 0;
+			right: 0;
+		}
+		
+		h2 {
+			margin-top: 0;
+		}
+		
+		.caption {
+			margin: auto;
+		}
+	</style>
+</head>
+<body>
+	<figure>
+		<canvas data-parallax>
+			<picture>
+				<source media="(max-width: 768px)" srcset="bg-sm.png"/>
+				<source media="(max-width: 1024px)" srcset="bg-md.png"/>
+				<img src="bg.png"/>
+			</picture>
+		</canvas>
+		<figcaption>
+			<div class="caption">
+				<h2>Some title</h2>
+				<p>Some text text text</p>
+				<button>Call to action</button>
+			</div>
+		</figcaption>
+	</figure>
+	<figure>
+		<canvas data-parallax>
+			<picture>
+				<source media="(max-width: 768px)" srcset="https://unsplash.it/240/320/?random"/>
+				<source media="(max-width: 1024px)" srcset="https://unsplash.it/1024/768/?random"/>
+				<img src="https://unsplash.it/1440/768/?random"/>
+			</picture>
+		</canvas>
+		<figcaption>
+			<div class="caption">
+				<h2>Test loading image</h2>
+				<p>Some text text text</p>
+				<button>Call to action</button>
+			</div>
+		</figcaption>
+	</figure>
+	
+	<script src="parallax.js"></script>
+</body>
+</html>
