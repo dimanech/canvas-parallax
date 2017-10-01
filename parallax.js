@@ -41,6 +41,8 @@ class CanvasParallax {
 		this.start = this.top - window.innerHeight;
 		this.localScroll = params.localScroll;
 		this.latestKnownScroll = 0;
+		this.isImageLoaded = false;
+		this.isPainting = false;
 		this.context = this.canvas.getContext('2d');
 		this.loadImage();
 		this.attachEventHandlers();
@@ -53,11 +55,10 @@ class CanvasParallax {
 
 	loadImage() {
 		this.image = new Image();
-		const self = this;
-		this.image.addEventListener('load', function () {
-			self.initCanvasSize();
-			self.isImageLoaded = true;
-			self.render(CanvasParallax.getDocumentScroll());
+		this.image.addEventListener('load', () => {
+			this.initCanvasSize();
+			this.isImageLoaded = true;
+			this.render(CanvasParallax.getDocumentScroll());
 		});
 		this.image.src = this.src;
 	};
@@ -67,7 +68,7 @@ class CanvasParallax {
 		this.canvas.height = this.image.height - (this.options.offset);
 	};
 
-	scrollToPosition(scrollTop) {
+	outerToInnerScroll(scrollTop) {
 		const offset = this.options.offset;
 		const localScroll = scrollTop - this.start;
 		const position = localScroll / (window.innerHeight / offset);
@@ -77,7 +78,7 @@ class CanvasParallax {
 	render(scrollTop) {
 		const offset = this.options.offset;
 
-		const y = Math.round(this.scrollToPosition(scrollTop));
+		const y = Math.round(this.outerToInnerScroll(scrollTop));
 		const beta = this.beta > offset ? offset : this.beta;
 		const gamma = this.gamma > offset ? offset : this.gamma;
 
@@ -86,18 +87,26 @@ class CanvasParallax {
 		}
 
 		this.context.drawImage(this.image, beta - offset, y - gamma);
+		this.isPainting = false;
 	};
 
 	onScroll() {
 		const scrollTop = CanvasParallax.getDocumentScroll();
+		const isImageOutOfView = scrollTop > this.top + this.image.height;
+		const shouldStart = scrollTop >= this.start;
 
-		if (!this.isImageLoaded && scrollTop > this.top + this.image.height) {
+		if (this.latestKnownScroll === scrollTop ||
+			this.isPainting ||
+			isImageOutOfView ||
+			!shouldStart ||
+			!this.isImageLoaded
+			) {
 			return false;
 		}
 
-		if (scrollTop >= this.start) {
-			this.render(scrollTop);
-		}
+		this.latestKnownScroll = scrollTop;
+		this.isPainting = true;
+		this.render(scrollTop);
 	};
 
 	onDeviceOrientationChange(event) {
@@ -118,20 +127,9 @@ class CanvasParallax {
 		this.loadImage();
 	};
 
-	scrollPositionInfinitePoll() {
-		const scrollTop = CanvasParallax.getDocumentScroll();
-
-		if (scrollTop !== this.latestKnownScroll) {
-			this.latestKnownScroll = scrollTop;
-			this.onScroll(scrollTop);
-		}
-
-		window.requestAnimationFrame(this.scrollPositionInfinitePoll.bind(this));
-	};
-
 	attachEventHandlers() {
-		window.addEventListener('scroll', this.onScroll.bind(this), {passive: true});
-		window.addEventListener('touchstart', this.onScroll.bind(this), {passive: true});
+		window.addEventListener('scroll', this.onScroll.bind(this), { passive: true });
+		window.addEventListener('touchstart', this.onScroll.bind(this), { passive: true });
 
 		if (window.DeviceOrientationEvent) {
 			window.addEventListener('deviceorientation', this.onDeviceOrientationChange.bind(this));
@@ -143,7 +141,7 @@ class CanvasParallax {
 }
 
 class CanvasParallaxDocument extends CanvasParallax {
-	scrollToPosition(scrollTop) {
+	outerToInnerScroll(scrollTop) {
 		return (scrollTop / this.options.speed);
 	}
 }
@@ -157,16 +155,15 @@ class CanvasParallaxTop extends CanvasParallax {
 	onScreenChange() {
 		const canvas = this.canvas;
 		const imageSrc = canvas.querySelectorAll('img')[0];
-		const canvasTop = canvas.getBoundingClientRect().top + CanvasParallax.getDocumentScroll();
 
-		this.top = canvasTop;
+		this.top = canvas.getBoundingClientRect().top + CanvasParallax.getDocumentScroll();
 		this.start = this.top;
 		this.src = imageSrc.currentSrc || imageSrc.src;
 
 		this.loadImage();
 	};
 
-	scrollToPosition(scrollTop) {
+	outerToInnerScroll(scrollTop) {
 		return ((scrollTop - this.start) / this.options.speed);
 	}
 }
